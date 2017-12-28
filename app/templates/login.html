@@ -1,0 +1,55 @@
+
+{% extends "base.html" %}
+{% block content %}
+	<div class="main">
+		<div class="title">
+			<span style="font-size: 22px;font-family: 'Microsoft Yahei';color:green">登录</span>
+			<!--<b>·</b>
+			<a href="">注册</a>-->
+		</div>
+		<div class="container">
+			<!--<div class="input-prepend ">
+			<input type="text" placeholder="用户名" name="username">
+			<i class="iconfont"></i>
+			</div>
+			<div class="input-prepend ">
+			<input type="password" placeholder="密码" name="password">
+			<i class="iconfont"></i>
+			</div>
+			<input type="button" class="sign-in-button" name="submit" value="登录">
+			<div class="rightTips">
+				<a href="">忘记密码？</a>
+			</div>-->
+			<form action="/login" method="post" name="login">
+				{{ form.hidden_tag() }}
+				<p>
+					输入管理员用户名:<br>
+					<div class="input-prepend ">
+					{{ form.userName(size=80) }}<br>
+					</div>
+				</p>
+				<p>
+						输入管理密码:<br>
+						<div class="input-prepend ">
+						{{ form.passWord(size=80) }}<br>
+						</div>
+					</p>
+				<p>{{ form.rem_me }} 记住我?</p>
+				<p><input type="submit" class="sign-in-button" name="submit" value="登录"></p>
+				</form>
+	{% with messages = get_flashed_messages() %}
+		{% if messages %}
+			{% for msg in messages %}
+				<div class="alert alert-danger warning-msg" role="alert">
+					<strong>错误!</strong>{{ msg }}
+				</div>
+			{% endfor %}
+		{% endif %}
+	{% endwith %}
+		</div>
+	</div>
+	<script src="/static/js/jquery-1.12.4.js"></script>
+	<script src="/static/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="/static/css/login.css">
+    <script src="/static/js/ajax.js"></script>
+	{% endblock %}

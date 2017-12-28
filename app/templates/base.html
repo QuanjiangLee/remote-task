@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+			{% if title %}
+			<title>{{ title }}</title>
+			{% else %}
+			<title>Welcome to here!</title>
+			{% endif %}
+			<style>
+			.warning-msg {
+				color:red;
+				list-style:none;
+			}
+			.success-msg {
+				color:green;
+				list-style:none;
+			}
+			</style>
+    </head>
+    <body>
+		{% block content %}{% endblock %}
+		<script src="/static/js/jquery-1.12.4.js"></script>
+		<script src="/static/js/bootstrap.min.js"></script>
+		<script src="/static/js/ajax.js"></script>
+		<script src="/static/js/text-utils.js"></script>
+    </body>
+</html>
