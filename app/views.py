@@ -102,16 +102,10 @@ def cmd_exec(cmd):
         }
         return ret
 
-@app.route('/tcpServices')
-def tcp_service():
-    cmd = ['netstat', '-ntlp']
-    data = cmd_exec(cmd)
-    return jsonify(data)
-
 
 def cmd_run(args):
     is_exec = False
-    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=True)
+    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, stderr) = p.communicate()
     if stdout:
         is_exec = True
