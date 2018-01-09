@@ -64,30 +64,31 @@ def index():
     title = "主页"
     cmd1 = ["uname", "-ior"]
     cmd2 = ['hostname']
-    cmd3 = ['crontab', '-l']
-    data = more_exec(cmd1, cmd2, cmd3)
+    cmd3 = 'cat /proc/cpuinfo | grep name | cut -f2 -d: | uniq -c'
+    data = more_exec(False, cmd1, cmd2)
+    data.append(cmd_exec(cmd3, True))
     data[0]["info"]="系统版本"
     data[1]["info"]="主机名"
-    data[2]["info"]="任务列表"
+    data[2]["info"]="CPU型号"
     return render_template('index.html', user=user, title=title,data=data)
 
 @app.route('/serviceInfo')
 def host_info():
     title = "服务信息"
     cmd = ['netstat', '-ntlp']
-    data = more_exec(cmd)
+    data = cmd_exec(cmd, False)
     data[0]["info"]="TCP服务"
-    return render_template('index.html', title=title,data=data)
+    return render_template('manageServ.html', title=title,data=data)
 
-def more_exec(*args):
+def more_exec(option, *args):
     more_ret=[]
     for arg in args:
-        ret = cmd_exec(arg)
+        ret = cmd_exec(arg, option)
         more_ret.append(ret)
     return more_ret
 
-def cmd_exec(cmd):
-    is_exec, cmdout = cmd_run(cmd)
+def cmd_exec(cmd, option):
+    is_exec, cmdout = cmd_run(cmd, option)
     if is_exec is True:
         ret = {
             "is_exec": True,
@@ -103,11 +104,13 @@ def cmd_exec(cmd):
         return ret
 
 
-def cmd_run(args):
+def cmd_run(args, option=False) :
     is_exec = False
-    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    print args
+    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=option)
     (stdout, stderr) = p.communicate()
     if stdout:
         is_exec = True
         return is_exec, stdout
+    print stderr
     return is_exec, stderr
