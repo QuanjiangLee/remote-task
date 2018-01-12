@@ -1,32 +1,89 @@
+{% extends "index.html" %}
+{% block info %}
 <ul class="nav nav-tabs">
         <li class="nav-item">
-          <a href="/serviceInfo" class="nav-link">服务信息</a>
+          <a href="/sourceInfo" class="nav-link">source信息</a>
         </li>
         <li class="nav-item">
-          <a href="/otherInfo" class="nav-link">自定义管理</a>
+          <a href="/serviceManage" class="nav-link">服务信息</a>
         </li>
         <li class="nav-item disabled">
           <a href="#" class="nav-link">Disabled</a>
         </li>
 </ul>
 <div class="container">
-        <table class="table table-hover" style="table-layout:fixed">
-                <thead></thead>
+        {% if infoType == 'source' %}
+        {% if  listData %}
+        <ul class="list-group">
+        {% for data in listData %}
+        <li class="list-group-item"><span>{{ data }}</span></li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+        {% if tableData %}
+        <table class="table table-hover" style="table-layout:fixed;margin-top:20px; font-size:1.2em">
+            <thead>
+                {% for data in tableData[0].split() %}
+                <th>{{ data }}</th>
+                {%  endfor %}
+            </thead>
+            <tbody>
+                {% for entry in tableData[1:] %}
+                <tr>
+                {% for data in entry.split() %}
+                <td>{{ data }}</td>
+                {% endfor %}
+                </tr>
+                {%  endfor %}
+            </tbody>      
+        </table>
+        <script type="text/javascript">
+            (function(){
+                var timer = setInterval(function(){
+ 	                clearTimeout(timer);
+                    manageService();
+ 	            },5000);
+            })()
+        </script>
+        {% endif %}
+        {% endif %}
+        
+        {% if infoType == 'service' %}
+        <table class="table table-hover" style="table-layout:fixed; font-size:1.2em">
+                <thead>
+                    <tr>
+                        <th>service protocol</th>
+                        <th>Lastname</th>
+                        <th>Email</th>
+                        <th>Email</th>
+                        <th>Email</th>
+                      </tr>
+                </thead>
+                <tbody>
+                    {% if is_exec %}
+                        {% for entry in cmdret %}
+                            <tr><td>{{ entry[0] }}</td><td>{{ entry[3]}}</td><td>{{ entry[4] }}</td><td>{{ entry[5] }}</td><td>{{ entry[6] }}</td></tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
             </table>
-        <!--<ul class="list-group">
-        {% if data %}
-        {% for item in data %}
-            {% if item.is_exec %}                    
-                <li class="list-group-item"><span>{{ item.info }}:</span>&nbsp;&nbsp;{{ item.cmdret }}</li>
-            {% else %}
-                <li class="list-group-item item-error"><span style="color:black">{{ item.info }}:</span>&nbsp;&nbsp;{{ item.retopt }}</li>
-            {% endif %}
-        {% endfor %}
+            <form action="/manageService" method="post" name="manageService" style="display:inline; font-size:1.2em; ">
+				{{ form.hidden_tag() }}
+                    serviceName:
+                    {{ form.serviceName(size=20) }}
+                    manageType:
+                    <input id="manageType-0" name="manageType" type="radio" value="start">
+                    <label for="manageType-0">start server</label>&nbsp;&nbsp;
+                    <input id="manageType-1" name="manageType" type="radio" value="stop">
+                    <label for="manageType-1">stop server</label>&nbsp;&nbsp;
+                    <input id="manageType-2" name="manageType" type="radio" value="restart">
+                    <label for="manageType-2">restart server</label><br>
+                    <br>
+                    customCmd:
+                   {{ form.customCmd(size=50) }}<br><br>
+                   <input type="reset" class="btn btn-info" name="reset" value="reset">&nbsp;&nbsp;&nbsp;&nbsp;
+				<input type="submit" class="btn btn-primary" name="submit" value="submit">
+				</form>
         {% endif %}
-        {% if data %}
-        {% for item in list %}
-        <li class="list-group-item">{{ item }}</li>
-        {% endfor %}
-        {% endif %}
-        </ul>-->
 </div>
+{% endblock %}

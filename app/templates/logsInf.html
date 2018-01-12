@@ -1,0 +1,64 @@
+{% extends "index.html" %}
+{% block info %}
+<span>LogsInf</span>
+<div class="container">
+    <table class="table" style="border-collapse:separate; border-spacing:0px 8px;">
+        <thead>
+          <tr>
+            <th>logMsg</th>
+            <th>logType</th>
+            <th>retStatus</th>
+            <th>logTime</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for log in logs %}
+            {% if log.retStatus == 1 %}    
+            <tr class="success">
+                <td>{{ log.logMsg }}</td>
+                {% if  log.logType == 0 %}
+                <td>start</td>
+                {% elif  log.logType == 1 %}
+                <td>stop</td>
+                {% elif log.logType == 2 %}
+                <td>restart</td>
+                {% else %}
+                <td>unknow</td>
+                {% endif %}
+                <td> success </td>
+                <td>{{ log.logTime }}</td>
+                <td>
+                        <button type="button" class="close log-close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                            <span class="sr-only">Close</span>
+                        </button>
+                </td>
+            </tr>
+            {% elif log.retStatus == 0 %}
+            <tr class="danger">
+                <td>{{ log.logMsg }}</td>
+                {% if  log.logType == 0 %}
+                <td>start</td>
+                {% elif  log.logType == 1 %}
+                <td>stop</td>
+                {% elif log.logType == 2 %}
+                <td>restart</td>
+                {% else %}
+                <td>unknow</td>
+                {% endif %}
+                <td> Failed </td>
+                <td>{{ log.logTime }}</td>
+                <td>
+                    <button type="button" class="close log-close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                        <span class="sr-only">Close</span>
+                    </button>
+                </td>
+            </tr>
+            {% endif %}
+        {% endfor %}
+        </tbody>
+      </table>
+</div>
+{% endblock %}

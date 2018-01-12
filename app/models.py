@@ -9,7 +9,7 @@ class UserInf(db.Model):
     userName = db.Column(db.String(64), index=True, unique=True) #可索引，字段名唯一
     userPassword = db.Column(db.String(120)) 
     userEmail = db.Column(db.String(120), index=True, unique=True) #可索引，字段名唯一
-    posts = db.relationship('Posts', backref='author', lazy='dynamic')
+    logs = db.relationship('LogsInf', backref='user', lazy='dynamic')
     
     @property
     def is_authenticated(self):
@@ -32,11 +32,21 @@ class UserInf(db.Model):
     def __repr__(self):
         return '<UserInf %r>' % (self.userName) #格式化打印字符串，同def __str__(self)类似
 
-class Posts(db.Model):
+
+# from app import db,models
+# u = models.UserInf.query.get(1)
+# import datetime
+# log = models.LogsInf(logTime=datetime.datetime.utcnow(), logType=0, logMsg='test2',retStatus=True, logStatus=True, user=u)
+# db.session.add(log)
+# db.session.commit()
+class LogsInf(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    post = db.Column(db.String(140))
-    timeStamp = db.Column(db.DateTime)
+    logTime = db.Column(db.DateTime)
+    logType = db.Column(db.Integer)
+    logMsg = db.Column(db.String(64))
+    retStatus = db.Column(db.Boolean,  default=False) 
+    logStatus = db.Column(db.Boolean,  default=False) 
     user_id = db.Column(db.Integer, db.ForeignKey('user_inf.userId'))
     
     def __repr__(self):
-        return '<Posts %r>' % (self.posts)
+        return '<LogsInf %r>' % (self.logMsg)

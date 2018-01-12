@@ -11,15 +11,13 @@
         <aside class="aside">
                 <ul class="list-group">
                         <li class="list-group-item list-aside" onclick="getHostInfo()">
-                          <span class="label label-default label-pill pull-right">14</span>
                           主机状态
                         </li>
                         <li class="list-group-item list-aside" onclick="manageService()">
-                          <span class="label label-default label-pill pull-right">2</span>
                           服务管理
                         </li>
                         <li class="list-group-item list-aside" onclick="getServiceLog()">
-                          <span class="label label-default label-pill pull-right">1</span>
+                          <span class="label label-default label-pill pull-right" style="position:absolute;right:25px;">1</span>
                          服务日志  
                         </li>
                       </ul>
@@ -42,12 +40,26 @@
                 {% endfor %}
             {% endif %}
             {% endwith %}
-            {% include 'host.html' %}
+            {% block info %}{% endblock %}
         </div>
     </div>
-    <div class="bottom-add">
+    <!--<div class="bottom-add">
         <button onclick="addHost(this)" class="new-host btn-fade" style="margin: auto 50px;">+</button>
-    </div>
+    </div>-->
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/css/index.css" rel="stylesheet">
+    <script type="text/javascript">
+        (function(){
+            
+        })()
+        function manageService(){
+            location.href = "/sourceInfo";
+        }
+        function getHostInfo(){
+            location.href = "/index";
+        }
+        function getServiceLog(){
+            location.href = "/serviceLog";
+        }
+    </script> 
 {% endblock %}

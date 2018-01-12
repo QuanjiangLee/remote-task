@@ -172,6 +172,7 @@
     .list-aside {
         display: block;
         background-color: #31708f;
+        text-align: center;
         height: 80px;
         padding: 25px 15px;
         cursor: pointer;
@@ -190,7 +191,6 @@
         border-radius:0px;
     }
     .list-group {
-        text-align: center;
         width: 100%;
     }
     li {
@@ -199,4 +199,8 @@
 
     .item-error {
         color: red;
+    }
+
+    #manageType li {
+        display: inline;
     }

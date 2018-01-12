@@ -1,5 +1,8 @@
 # coding=UTF-8
-import sys  
+import sys
+import os
+import time 
+import datetime 
 import subprocess
 reload(sys)  
 sys.setdefaultencoding('utf8')
@@ -9,13 +12,25 @@ from flask import jsonify
 from flask import render_template, flash, redirect, session, url_for, request, g
 from flask_login import login_user, logout_user, current_user, login_required
 from app import app, db, LoginMa
-from forms import loginForm
-from models import UserInf
+from forms import loginForm, serviceForm
+from models import UserInf, LogsInf
+
+@app.before_first_request
+
+
+def top_run():
+    args = 'top -i -b -n1 -d 1 > test.top'
+    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    (stdout, stderr) = p.communicate()
+    if stderr:
+        return False
+    return True
 
 @app.before_request
 def before_request():
     g.user = current_user  
     print(g.user)
+    top_run()
 
 @LoginMa.user_loader
 def load_User(userId):
@@ -63,22 +78,144 @@ def index():
     user = g.user
     title = "主页"
     cmd1 = ["uname", "-ior"]
-    cmd2 = ['hostname']
-    cmd3 = 'cat /proc/cpuinfo | grep name | cut -f2 -d: | uniq -c'
-    data = more_exec(False, cmd1, cmd2)
-    data.append(cmd_exec(cmd3, True))
-    data[0]["info"]="系统版本"
-    data[1]["info"]="主机名"
-    data[2]["info"]="CPU型号"
-    return render_template('index.html', user=user, title=title,data=data)
+    cmd2 = ["uname", '-v']
+    cmd3 = ['hostname']
+    cmd4 = 'cat /proc/cpuinfo | grep name | cut -f2 -d: | uniq -c'
+    data = more_exec(False, cmd1, cmd2, cmd3)
+    data.append(cmd_exec(cmd4, True))
+    data[0]["info"] = "内核版本"
+    data[1]["info"] = "系统版本"
+    data[2]["info"] = "主机名"
+    data[3]["info"] = "CPU型号"
+    return render_template('host.html', user=user, title=title,data=data, infoType='hostInfo')
+
 
 @app.route('/serviceInfo')
 def host_info():
     title = "服务信息"
     cmd = ['netstat', '-ntlp']
-    data = cmd_exec(cmd, False)
+    data = more_exec(False, cmd)
     data[0]["info"]="TCP服务"
-    return render_template('manageServ.html', title=title,data=data)
+    return render_template('host.html', title=title, data=data, infoType='otherInfo')
+
+
+@app.route('/serviceManage')
+def service_info():
+    form = serviceForm()
+    cmdret = []
+    title = "服务信息"
+    cmd = ['netstat', '-ntlp']
+    info = more_exec(False, cmd)
+    #data[0]["info"]="服务信息"
+    data = info[0]['cmdret'].split('\n')
+    is_exec = info[0]['is_exec']
+    for d in data[2:]:
+        cmdret.append(d.split()) 
+    #print cmdret
+    return render_template('manageServ.html', title=title, cmdret=cmdret, is_exec=is_exec, form=form,infoType='service')
+
+
+@app.route('/sourceInfo')
+def source_Info():
+    title = "服务信息"    
+    listData = []
+    tableData = []
+    with open('test.top', 'r') as f:
+        lines = f.read()
+    linesList = lines.split('\n')
+    for list in linesList[:5]:
+        listData.append(list)
+    for data in linesList[6:]:
+        tableData.append(data)
+    return render_template('manageServ.html', title=title, listData=listData, tableData=tableData, infoType='source')
+
+
+@app.route('/manageService', methods=['GET','POST'])
+def manageService():
+    form = serviceForm()
+    if form.is_submitted():                   
+        serviceName = request.form.get('serviceName', '')
+        customCmd = request.form.get('customCmd', '')
+        manageType = request.form.get('manageType', '')
+        print('=========',serviceName, manageType,customCmd)
+        if serviceName == '' and customCmd == '' and manageType == '':
+            flash("The form is not should all null ")
+            return redirect(request.args.get('next') or url_for('service_info'))
+        if customCmd != '':
+            type = customCmd.split()
+            if type[1] == 'start' or type[2] == 'start':
+                logType = 0
+            elif type[1] == 'stop' or type[2] == 'stop':
+                logType = 1
+            elif type[1] == 'restart' or type[2] == 'restart':
+                logType = 2
+            try:
+                ret = cmd_exec(customCmd, False)
+            except Exception :
+                ret = cmd_exec(customCmd, True)
+                if ret['is_exec'] is False:
+                    msg = 'No such this service to Manage! The custom command is  error!'
+                    flash(msg)
+                    db_insert_logs(logType, msg, retStatus=False, logStatus=False)
+                else:
+                    msg = 'The custom command is success!'
+                    flash(msg)
+                    db_insert_logs(logType, msg, retStatus=True, logStatus=False)
+        else:
+            if serviceName != '' or manageType != '':
+                cmd = 'systemctl' + ' ' + manageType +' '+ serviceName
+                if manageType == 'start':
+                    logType = 0
+                elif manageType == 'stop':
+                    logType = 1
+                elif manageType == 'restart':
+                    logType =2
+                try:
+                    ret = cmd_exec(cmd, False)
+                except Exception :
+                    ret = cmd_exec(cmd, True)
+                if ret['is_exec'] is True:
+                    msg = 'The ' +serviceName+ ' is '+ manageType + ' success!'
+                    flash(msg)
+                    db_insert_logs(logType, msg, retStatus=True, logStatus=False)
+                    return redirect(request.args.get('next') or url_for('service_info'))
+                else:
+                    cmd = 'service' + ' ' + serviceName +' '+ manageType
+                    try:
+                        ret = cmd_exec(cmd, False)
+                    except Exception :
+                        ret = cmd_exec(cmd, True)
+                    if ret['is_exec'] is False:
+                        msg = 'No such this service to Manage! The ' +serviceName+ 'is '+ manageType + ' Failed!'
+                        flash(msg)
+                        db_insert_logs(logType, msg, retStatus=False, logStatus=False)
+                    else:
+                        msg = 'The ' +serviceName+ ' is '+ manageType + ' success!'
+                        flash(msg)
+                        db_insert_logs(logType, msg, retStatus=True, logStatus=False)
+            else:
+                flash("serviceName or manageType is not should null ")
+    return redirect(request.args.get('next') or url_for('service_info')) 
+
+@app.route('/serviceLog', methods=['GET', 'POST'])
+def serviceLog():
+    title = "logsInf"
+    cur_user = UserInf.query.filter_by(userName = current_user.userName).first()
+    logs = LogsInf.query.filter_by(user_id=cur_user.userId)
+    print logs
+    #logsLen = len(logs)
+    return render_template('logsInf.html', title=title,logs=logs, infoType='logsInf')
+
+def db_insert_logs(logType, logMsg, retStatus=False, logStatus=False):
+    #cur_user = UserInf.query.filter_by(userName = cur_user.userName).first()
+    try:
+        log = models.LogsInf(logTime=datetime.datetime.utcnow(), logType=logType, logMsg=logMsg,retStatus=retStatus, logStatus=logStatus, user=current_user)
+        db.session.add(log)
+        db.session.commit()
+    except Exception as err:
+        print 'err is %s' % (err)
+        return False
+    return True
 
 def more_exec(option, *args):
     more_ret=[]
@@ -105,12 +242,17 @@ def cmd_exec(cmd, option):
 
 
 def cmd_run(args, option=False) :
-    is_exec = False
+    is_exec = True
     print args
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=option)
     (stdout, stderr) = p.communicate()
-    if stdout:
-        is_exec = True
-        return is_exec, stdout
-    print stderr
-    return is_exec, stderr
+    if stderr:
+        is_exec = False
+        return is_exec, stderr
+    return is_exec, stdout
+from app import db,models
+
+
+
+
+#def db_delete_logs():
