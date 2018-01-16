@@ -17,7 +17,7 @@
                           服务管理
                         </li>
                         <li class="list-group-item list-aside" onclick="getServiceLog()">
-                          <span class="label label-default label-pill pull-right" style="position:absolute;right:25px;">1</span>
+                          <span class="label label-default label-pill pull-right" id ='msgCount' style="position:absolute;right:25px;background-color:#2aad89">0</span>
                          服务日志  
                         </li>
                       </ul>
@@ -48,9 +48,13 @@
     </div>-->
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/css/index.css" rel="stylesheet">
+    <script src="/static/js/jquery-1.12.4.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/ajax.js"></script>
+    <script src="/static/js/text-utils.js"></script>
     <script type="text/javascript">
         (function(){
-            
+            getRequest('/getMsgCount','', true, loadMsgCount)
         })()
         function manageService(){
             location.href = "/sourceInfo";
@@ -60,6 +64,12 @@
         }
         function getServiceLog(){
             location.href = "/serviceLog";
+        }
+        function loadMsgCount(ret) {
+            elem = document.getElementById('msgCount')
+            if (ret != undefined || ret != null){
+            elem.innerHTML = ret['msgCount'];
+            }
         }
     </script> 
 {% endblock %}

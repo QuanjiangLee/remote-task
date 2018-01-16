@@ -2,6 +2,7 @@
 import sys
 import os
 import time 
+import json
 import datetime 
 import subprocess
 reload(sys)  
@@ -14,6 +15,7 @@ from flask_login import login_user, logout_user, current_user, login_required
 from app import app, db, LoginMa
 from forms import loginForm, serviceForm
 from models import UserInf, LogsInf
+from sqlalchemy import desc
 
 @app.before_first_request
 
@@ -72,11 +74,13 @@ def logout():
     return redirect('/')
 
 
+
 @app.route('/index', methods=['GET','POST'])
 @login_required
 def index():
     user = g.user
     title = "主页"
+    dataTitle = '当前主机信息:'
     cmd1 = ["uname", "-ior"]
     cmd2 = ["uname", '-v']
     cmd3 = ['hostname']
@@ -87,16 +91,28 @@ def index():
     data[1]["info"] = "系统版本"
     data[2]["info"] = "主机名"
     data[3]["info"] = "CPU型号"
-    return render_template('host.html', user=user, title=title,data=data, infoType='hostInfo')
+    return render_template('host.html', user=user, title=title, dataTitle=dataTitle, data=data, infoType='hostInfo')
 
+@app.route('/getMsgCount', methods=['GET','POST'])
+@login_required
+def getMsgCount():
+        cur_user = UserInf.query.filter_by(userName = current_user.userName).first()
+        logsCount = LogsInf.query.filter_by(user_id=cur_user.userId, logStatus=False).count()
+        print logsCount
+        ret = {'msgCount': logsCount}
+        return jsonify(ret) 
 
-@app.route('/serviceInfo')
+@app.route('/otherInfo')
 def host_info():
-    title = "服务信息"
-    cmd = ['netstat', '-ntlp']
-    data = more_exec(False, cmd)
-    data[0]["info"]="TCP服务"
-    return render_template('host.html', title=title, data=data, infoType='otherInfo')
+    title = "其他信息"
+    cmd = ['w', '-u']
+    ret = more_exec(False, cmd)
+    if ret[0]['is_exec']:
+        data = ret[0]['cmdret'].split('\n')[:-1]
+    else:
+        data = []
+    dataTitle="当前用户登录信息:"
+    return render_template('host.html', title=title, data=data,dataTitle=dataTitle, infoType='otherInfo')
 
 
 @app.route('/serviceManage')
@@ -104,20 +120,24 @@ def service_info():
     form = serviceForm()
     cmdret = []
     title = "服务信息"
+    dataTitle = "服务信息:" 
     cmd = ['netstat', '-ntlp']
     info = more_exec(False, cmd)
     #data[0]["info"]="服务信息"
     data = info[0]['cmdret'].split('\n')
+    #print data
     is_exec = info[0]['is_exec']
-    for d in data[2:]:
-        cmdret.append(d.split()) 
+    if is_exec:
+        for d in data[2:]:
+            cmdret.append(d.split()) 
     #print cmdret
-    return render_template('manageServ.html', title=title, cmdret=cmdret, is_exec=is_exec, form=form,infoType='service')
+    return render_template('manageServ.html', title=title, dataTitle=dataTitle, cmdret=cmdret, is_exec=is_exec, form=form,infoType='service')
 
 
 @app.route('/sourceInfo')
 def source_Info():
-    title = "服务信息"    
+    title = "资源信息"
+    dataTitle = "资源信息:"  
     listData = []
     tableData = []
     with open('test.top', 'r') as f:
@@ -127,7 +147,20 @@ def source_Info():
         listData.append(list)
     for data in linesList[6:]:
         tableData.append(data)
-    return render_template('manageServ.html', title=title, listData=listData, tableData=tableData, infoType='source')
+    return render_template('manageServ.html', title=title, dataTitle=dataTitle, listData=listData, tableData=tableData, infoType='source')
+
+@app.route('/getSourceInfo', methods=['GET', 'POST'])
+def getSourceInfo():
+    listData = []
+    tableData = []
+    with open('test.top', 'r') as f:
+        lines = f.read()
+    linesList = lines.split('\n')
+    for list in linesList[:5]:
+        listData.append(list)
+    for data in linesList[6:]:
+        tableData.append(data.split())
+    return jsonify(listData=listData, tableData=tableData)
 
 
 @app.route('/manageService', methods=['GET','POST'])
@@ -200,11 +233,21 @@ def manageService():
 @app.route('/serviceLog', methods=['GET', 'POST'])
 def serviceLog():
     title = "logsInf"
-    cur_user = UserInf.query.filter_by(userName = current_user.userName).first()
-    logs = LogsInf.query.filter_by(user_id=cur_user.userId)
-    print logs
+    dataTitle = '进程操作日志:'
+    try:
+        cur_user = UserInf.query.filter_by(userName = current_user.userName).first()
+        logs = LogsInf.query.filter_by(user_id=cur_user.userId).order_by(desc(LogsInf.logTime))
+        tmpLogs = LogsInf.query.filter_by(user_id=cur_user.userId)
+        tmpLogs.update(dict(logStatus=True))
+        db.session.commit()
+    except Exception as err:
+        print err
+        flash('it\'s no logs in here ')
+        return render_template('logsInf.html', title=title, dataTitle=dataTitle, logs=logs, infoType='logsInf')
     #logsLen = len(logs)
-    return render_template('logsInf.html', title=title,logs=logs, infoType='logsInf')
+    return render_template('logsInf.html', title=title, dataTitle=dataTitle, logs=logs, infoType='logsInf')
+
+
 
 def db_insert_logs(logType, logMsg, retStatus=False, logStatus=False):
     #cur_user = UserInf.query.filter_by(userName = cur_user.userName).first()
@@ -216,6 +259,29 @@ def db_insert_logs(logType, logMsg, retStatus=False, logStatus=False):
         print 'err is %s' % (err)
         return False
     return True
+
+@app.route('/del_that_log', methods=['GET', 'POST'])
+def db_delete_logs():
+    if request.method == "GET":
+        item = request.args.get('id', '')
+    if request.method == "POST":
+        data = request.get_json(force=False)
+        item = data['item']
+    try:
+        print item
+        cur_user = UserInf.query.filter_by(userName = current_user.userName).first()
+        del_log = LogsInf.query.filter_by(id=int(item), user_id=cur_user.userId).first()
+        db.session.delete(del_log)
+        db.session.commit()
+    except Exception as err:
+        print err
+        flash('delete log error!')
+        #ret = {'ret': False}
+        return redirect(request.args.get('next') or url_for('serviceLog'))
+    #ret = {'ret': True} 
+    #return jsonify(ret)
+    flash('delete log success!')
+    return redirect(request.args.get('next') or url_for('serviceLog'))
 
 def more_exec(option, *args):
     more_ret=[]
@@ -252,7 +318,3 @@ def cmd_run(args, option=False) :
     return is_exec, stdout
 from app import db,models
 
-
-
-
-#def db_delete_logs():

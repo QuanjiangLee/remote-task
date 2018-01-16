@@ -1,35 +1,46 @@
 {% extends "index.html" %}
 {% block info %}
-<span>LogsInf</span>
+<ul class="nav nav-tabs">
+    <li class="nav-item">
+      <a href="/serviceLog" class="nav-link">日志信息</a>
+    </li>
+    <li class="nav-item disabled">
+      <a href="#" class="nav-link">Disabled</a>
+    </li>
+</ul>
 <div class="container">
+    {% if dataTitle %}
+    <label>{{ dataTitle }}</label>
+    {% endif %}
     <table class="table" style="border-collapse:separate; border-spacing:0px 8px;">
         <thead>
           <tr>
-            <th>logMsg</th>
-            <th>logType</th>
-            <th>retStatus</th>
-            <th>logTime</th>
+            <th>日志消息</th>
+            <th>操作类型</th>
+            <th>操作结果</th>
+            <th>操作时间</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
         {% for log in logs %}
+             <span>{{ log.logStatus == 1 }}</span> 
             {% if log.retStatus == 1 %}    
             <tr class="success">
                 <td>{{ log.logMsg }}</td>
                 {% if  log.logType == 0 %}
-                <td>start</td>
+                <td>启动</td>
                 {% elif  log.logType == 1 %}
-                <td>stop</td>
+                <td>停止</td>
                 {% elif log.logType == 2 %}
-                <td>restart</td>
+                <td>重启</td> 
                 {% else %}
                 <td>unknow</td>
                 {% endif %}
-                <td> success </td>
-                <td>{{ log.logTime }}</td>
+                <td> 成功 </td>
+                <td>{{ (log.logTime | string()).split('.')[0] }}</td>
                 <td>
-                        <button type="button" class="close log-close" data-dismiss="alert" aria-label="Close">
+                        <button type="button" onclick="del_that_log(this)" class="close log-close" data-dismiss="alert" aria-label="Close" id={{ log.id }}>
                             <span aria-hidden="true">&times;</span>
                             <span class="sr-only">Close</span>
                         </button>
@@ -39,18 +50,18 @@
             <tr class="danger">
                 <td>{{ log.logMsg }}</td>
                 {% if  log.logType == 0 %}
-                <td>start</td>
+                <td>启动</td>
                 {% elif  log.logType == 1 %}
-                <td>stop</td>
+                <td>停止</td>
                 {% elif log.logType == 2 %}
-                <td>restart</td>
+                <td>重启</td>
                 {% else %}
                 <td>unknow</td>
-                {% endif %}
-                <td> Failed </td>
-                <td>{{ log.logTime }}</td>
+                {% endif %} 
+                <td> 失败 </td>
+                <td>{{ (log.logTime | string()).split('.')[0] }}</td>
                 <td>
-                    <button type="button" class="close log-close" data-dismiss="alert" aria-label="Close">
+                    <button type="button" onclick="del_that_log(this)" class="close log-close" data-dismiss="alert" aria-label="Close" id={{ log.id }}>
                         <span aria-hidden="true">&times;</span>
                         <span class="sr-only">Close</span>
                     </button>
@@ -60,5 +71,22 @@
         {% endfor %}
         </tbody>
       </table>
+      <script>
+      (function(){
+
+      })()
+      function del_that_log(elem){
+        var item = elem.id;
+       // postRequest('/del_that_log', {'item': item}, true, del_log_ret)
+       window.location = '/del_that_log?id='+item+''
+      }
+      function del_log_ret(ret){
+          if(ret['ret'] == true) {
+              alert('delete success!')
+          }else {
+            alert('delete Failed!')
+          }
+      }
+      </script>
 </div>
 {% endblock %}

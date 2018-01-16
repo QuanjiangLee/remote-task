@@ -5,9 +5,6 @@
           <a href="/index" class="nav-link">系统信息</a>
         </li>
         <li class="nav-item">
-          <a href="/serviceInfo" class="nav-link">服务信息</a>
-        </li>
-        <li class="nav-item">
           <a href="/otherInfo" class="nav-link">其他信息</a>
         </li>
         <li class="nav-item disabled">
@@ -15,7 +12,11 @@
         </li>
 </ul>
 <div class="container">
+        {% if dataTitle %}
+        <label>{{ dataTitle }}</label>
+        {% endif %}
         <ul class="list-group">
+        {% if infoType == 'hostInfo' %}
         {% for item in data %}
             {% if item.is_exec %}                    
                 <li class="list-group-item"><span>{{ item.info }}:</span>&nbsp;&nbsp;{{ item.cmdret }}</li>
@@ -23,6 +24,11 @@
                 <li class="list-group-item item-error"><span style="color:black">{{ item.info }}:</span>&nbsp;&nbsp;{{ item.retopt }}</li>
             {% endif %}
         {% endfor %}
+        {% elif  infoType == 'otherInfo' %}
+        {% for item in data %}
+             <li class="list-group-item">{{ item }}</li>
+        {% endfor %}
+        {% endif %}
         </ul>
 </div>
 {% endblock %}

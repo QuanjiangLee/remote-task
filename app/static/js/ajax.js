@@ -14,7 +14,7 @@ try {
 	}
 }
 if (request == null){
-	alert("Error creating request object!");
+	console.log("Error creating request object!");
 } else {
     return request;
     }
@@ -24,20 +24,20 @@ if (request == null){
 //data type like "hello='world'&hi=56
 function getRequest(url, data, type, func){
    // request.onreadystatechange = 
-	let request = createRequest();
+	var request = createRequest();
 	var urlArgs = url + "?" + data;
 	//alert(urlArgs)
 	request.open("GET",urlArgs,type);
 	request.onreadystatechange = function(){
 		if (request.readyState == 4){
 		if (request.status == 200){
-			let response = request.responseText;
+			var response = request.responseText;
 			//var response = request.responseXML;
 			if (func != false){
-				func(response);
+				func(JSON.parse(response));
 					}
 				} else {
-					alert("Error! Request status is " + request.status);
+					console.log("Error! Request status is " + request.status);
 				}
 			}   
 		} 
@@ -50,18 +50,18 @@ function getRequest(url, data, type, func){
 
 function postRequest(url, data, type, func) {
  	// body...
- 	let request = createRequest();
+ 	var request = createRequest();
 	request.open("POST",url,type);
 	request.onreadystatechange = function(){
 		if (request.readyState == 4){
 		if (request.status == 200){
 			//var response = request.responseXML;
-			let response = request.responseText;
+			var response = request.responseText;
 			if (func != false){
 				func(JSON.parse(response));
 					}
 				} else {
-					alert("Error! Request status is " + request.status);
+					console.log("Error! Request status is " + request.status);
 				}
 			}   
 		} 

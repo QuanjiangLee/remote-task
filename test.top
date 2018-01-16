@@ -1,0 +1,8 @@
+top - 17:29:29 up  6:25,  1 user,  load average: 0.03, 0.10, 0.16
+Tasks: 207 total,   1 running, 206 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  7.7 us,  1.6 sy,  0.0 ni, 89.9 id,  0.1 wa,  0.0 hi,  0.6 si,  0.0 st
+KiB Mem :  2041016 total,   168924 free,  1568008 used,   304084 buff/cache
+KiB Swap:  1046524 total,   924156 free,   122368 used.   255024 avail Mem 
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
+ 3360 jokey     20   0 1507192 320324  83628 S   6.7 15.7  23:10.79 code
