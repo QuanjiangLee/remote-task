@@ -1,8 +1,8 @@
-top - 17:29:29 up  6:25,  1 user,  load average: 0.03, 0.10, 0.16
-Tasks: 207 total,   1 running, 206 sleeping,   0 stopped,   0 zombie
-%Cpu(s):  7.7 us,  1.6 sy,  0.0 ni, 89.9 id,  0.1 wa,  0.0 hi,  0.6 si,  0.0 st
-KiB Mem :  2041016 total,   168924 free,  1568008 used,   304084 buff/cache
-KiB Swap:  1046524 total,   924156 free,   122368 used.   255024 avail Mem 
+top - 09:24:55 up 4 min,  2 users,  load average: 0.31, 0.51, 0.27
+Tasks: 205 total,   1 running, 204 sleeping,   0 stopped,   0 zombie
+%Cpu(s):  5.5 us,  2.5 sy,  0.7 ni, 85.0 id,  5.6 wa,  0.0 hi,  0.7 si,  0.0 st
+KiB Mem :  2041016 total,    79068 free,  1231996 used,   729952 buff/cache
+KiB Swap:  1046524 total,  1044476 free,     2048 used.   585288 avail Mem 
 
   PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND
- 3360 jokey     20   0 1507192 320324  83628 S   6.7 15.7  23:10.79 code
+ 2136 jokey     20   0 1861360 251688 101780 S   6.7 12.3   0:16.00 code
