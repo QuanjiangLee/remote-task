@@ -11,10 +11,11 @@
           <a href="#" class="nav-link">Disabled</a>
         </li>
 </ul>
+{% if dataTitle %}
+<label style="margin-top: 15px;">{{ dataTitle }}</label>
+{% endif %}
 <div class="container">
-        {% if dataTitle %}
-        <label>{{ dataTitle }}</label>
-        {% endif %}
+
         <ul class="list-group">
         {% if infoType == 'hostInfo' %}
         {% for item in data %}

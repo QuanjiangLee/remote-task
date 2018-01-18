@@ -176,12 +176,17 @@ def manageService():
             return redirect(request.args.get('next') or url_for('service_info'))
         if customCmd != '':
             type = customCmd.split()
-            if type[1] == 'start' or type[2] == 'start':
-                logType = 0
-            elif type[1] == 'stop' or type[2] == 'stop':
-                logType = 1
-            elif type[1] == 'restart' or type[2] == 'restart':
-                logType = 2
+            if len(type) > 2:
+                if type[1] == 'start' or type[2] == 'start':
+                    logType = 0
+                elif type[1] == 'stop' or type[2] == 'stop':
+                    logType = 1
+                elif type[1] == 'restart' or type[2] == 'restart':
+                    logType = 2
+                else:
+                    logType = 'unknow'
+            else:
+                logType = 'unknow'
             try:
                 ret = cmd_exec(customCmd, False)
             except Exception :
@@ -195,7 +200,7 @@ def manageService():
                     flash(msg)
                     db_insert_logs(logType, msg, retStatus=True, logStatus=False)
         else:
-            if serviceName != '' or manageType != '':
+            if serviceName != '' and manageType != '':
                 cmd = 'systemctl' + ' ' + manageType +' '+ serviceName
                 if manageType == 'start':
                     logType = 0
@@ -203,6 +208,8 @@ def manageService():
                     logType = 1
                 elif manageType == 'restart':
                     logType =2
+                else:
+                    logType = 'unknow'
                 try:
                     ret = cmd_exec(cmd, False)
                 except Exception :
@@ -214,6 +221,12 @@ def manageService():
                     return redirect(request.args.get('next') or url_for('service_info'))
                 else:
                     cmd = 'service' + ' ' + serviceName +' '+ manageType
+                    if manageType == 'start':
+                        logType = 0
+                    elif manageType == 'stop':
+                        logType = 1
+                    elif manageType == 'restart':
+                        logType = 2
                     try:
                         ret = cmd_exec(cmd, False)
                     except Exception :
@@ -234,18 +247,22 @@ def manageService():
 def serviceLog():
     title = "logsInf"
     dataTitle = '进程操作日志:'
+    logsRead = []
     try:
         cur_user = UserInf.query.filter_by(userName = current_user.userName).first()
         logs = LogsInf.query.filter_by(user_id=cur_user.userId).order_by(desc(LogsInf.logTime))
+        for log in logs:
+            logsRead.append(log.logStatus)
+        print logsRead
         tmpLogs = LogsInf.query.filter_by(user_id=cur_user.userId)
         tmpLogs.update(dict(logStatus=True))
         db.session.commit()
     except Exception as err:
         print err
         flash('it\'s no logs in here ')
-        return render_template('logsInf.html', title=title, dataTitle=dataTitle, logs=logs, infoType='logsInf')
+        return render_template('logsInf.html', title=title, dataTitle=dataTitle, logs=logs, logsRead=logsRead, infoType='logsInf')
     #logsLen = len(logs)
-    return render_template('logsInf.html', title=title, dataTitle=dataTitle, logs=logs, infoType='logsInf')
+    return render_template('logsInf.html', title=title, dataTitle=dataTitle, logs=logs, logsRead=logsRead, infoType='logsInf')
 
 
 

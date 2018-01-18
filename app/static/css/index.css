@@ -11,13 +11,14 @@
         /*border:1px solid #76927c;*/
     }
     .container {
-        margin-top: 20px;
+        margin-top: 5px;
         /*margin-left: 9.5%;*/
         margin-bottom: 20px;
     	display: flex;
         flex-wrap: wrap;
+        width: 80%;
         justify-content: flex-start;
-        height: 100%;
+        position: fixed;
     }
     .item {
         display: inline-table;

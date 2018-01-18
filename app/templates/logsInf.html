@@ -8,13 +8,14 @@
       <a href="#" class="nav-link">Disabled</a>
     </li>
 </ul>
+{% if dataTitle %}
+<label style="margin-top: 15px;">{{ dataTitle }}</label>
+{% endif %}
 <div class="container">
-    {% if dataTitle %}
-    <label>{{ dataTitle }}</label>
-    {% endif %}
     <table class="table" style="border-collapse:separate; border-spacing:0px 8px;">
         <thead>
           <tr>
+              <th>序列</th>
             <th>日志消息</th>
             <th>操作类型</th>
             <th>操作结果</th>
@@ -24,9 +25,9 @@
         </thead>
         <tbody>
         {% for log in logs %}
-             <span>{{ log.logStatus == 1 }}</span> 
             {% if log.retStatus == 1 %}    
             <tr class="success">
+                <td>{{ loop.index }}.</td>
                 <td>{{ log.logMsg }}</td>
                 {% if  log.logType == 0 %}
                 <td>启动</td>
@@ -48,6 +49,7 @@
             </tr>
             {% elif log.retStatus == 0 %}
             <tr class="danger">
+                <td>{{ loop.index }}.</td>
                 <td>{{ log.logMsg }}</td>
                 {% if  log.logType == 0 %}
                 <td>启动</td>
