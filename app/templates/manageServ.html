@@ -1,80 +1,228 @@
 {% extends "index.html" %}
-{% block info %}
+{% block nav %}
+<div class="top">
 <ul class="nav nav-tabs">
         <li class="nav-item">
-          <a href="/sourceInfo" class="nav-link">资源信息</a>
+          <a href="/getProcessInfo" class="nav-link">进程管理</a>
         </li>
         <li class="nav-item">
-          <a href="/serviceManage" class="nav-link">服务信息</a>
+          <a href="/serviceManage" class="nav-link">服务管理</a>
         </li>
         <li class="nav-item disabled">
           <a href="#" class="nav-link">Disabled</a>
         </li>
 </ul>
+</div>
+{% endblock %}
+{% block info %}
 {% if dataTitle %}
 <label style="margin-top: 15px;">{{ dataTitle }}</label>
 {% endif %}
 <div class="container">
-        {% if infoType == 'source' %}
-        {% if  listData %}
-        <ul class="list-group" id='list-group'>
-        {% for data in listData %}
-        <li class="list-group-item"><span>{{ data }}</span></li>
-        {% endfor %}
-        </ul>
-        {% endif %}
-        {% if tableData %}
-        <table class="table table-hover" style="table-layout:fixed;margin-top:20px; font-size:1.2em">
-            <thead>
-                {% for data in tableData[0].split() %}
-                <th>{{ data }}</th>
-                {%  endfor %}
-            </thead>
-            <tbody id='table-group'>
-                {% for entry in tableData[1:] %}
-                <tr>
-                {% for data in entry.split() %}
-                <td>{{ data }}</td>
-                {% endfor %}
-                </tr>
-                {%  endfor %}
-            </tbody>      
-        </table>
-        <script type="text/javascript">
-            (function(){
-                clearTimeout(timer);
-                var timer = setInterval(function(){
-                    getSourceInf();
-                 },1500);
-            })()
-            function getSourceInf(){
-                postRequest('/getSourceInfo','{}',true, sourceInfRet)
+        {% if infoType == 'processManage' %}
+        <div style="height:525px;">
+            <table class="table table-hover" style="font-size:1em;margin-bottom:0px;">
+                <thead>
+                    <tr>
+                        <th width="5%">No.</th>
+                        <th>USER</th>
+                        <th>PID</th>
+                        <th>%CPU</th>
+                        <th>%MEM</th>
+                        <th>VSZ</th>
+                        <th>RSS</th>
+                        <th>TTY</th>
+                        <th>STAT</th>
+                        <th>START</th>
+                        <th>TIME</th>
+                        <th width="12%">COMMAND</th>
+                        <th width="10%">OPERATE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if tableData %}
+                    {% for data in tableData %}
+                    <tr>
+                        <td style="padding:4px">{{ loop.index }}.</td>
+                        {% for item in data %}
+                        <td style="white-space: nowrap;padding:4px;overflow: hidden;text-overflow: ellipsis;">
+                        <span style='cursor:pointer;' data-html='true' data-toggle='popover' data-trigger='hover' data-containter='body' data-placement='left' data-content='{{ item }}' data-original-title="" title="">{{ item }}</span> 
+                    </td>
+                        {% endfor %}
+                        <td style="white-space: nowrap;padding:4px;overflow: hidden;text-overflow: ellipsis;"> 
+                            <button  class="btn btn-info" onclick="startProcess(this)" style="border-radius:0px;padding:1px 2px;" >启动</button>
+                            <button class="btn btn-warning" onclick="stopProcess(this)" style="border-radius:0px;padding:1px 2px;" >停止</button>
+                            <button class="btn btn-danger" onclick="killProcess(this)" style="border-radius:0px;padding:1px 2px;" >结束</button> 
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% endif%}
+                </tbody>
+            </table>
+            {% if not tableData %}
+            <div style="width: 100%;display: inline-flex;justify-content: center;">
+                <span class="glyphicon glyphicon-info-sign" style="margin-top:280px;color:#f0ad4e; font-size:1.2em; " aria-hidden="true">No data!</span>
+            </div>
+            {% endif %}
+        </div>
+            <div class="pageNav">
+                    <ul class="pagination">
+                            <li onclick="pageBefore(this)"><a href="javascript:void(0);">&laquo;</a></li>
+                            <span class="curPage">1</span>/<span class="totalPage">1</span>
+                            <input type="number" id='goPageNum' placeholder="pageNum" class="gopagenum" /><button id="goPage" onclick="goPages()">Go</button>
+                             刷新:
+                            <button class="btn btn-info btn-sm refresh "><span class="glyphicon glyphicon-refresh glyphicon-refresh-animate {
+                                " aria-hidden="true"></span></button>
+                            <li onclick="pageAfter(this)"><a href="javascript:void(0);">&raquo;</a></li>
+                        </ul>
+            </div>
+            <div class="search">
+                <input type="text"  placeholder="输入进程名或进程ID" name="sinput" class="sinput">
+                <input type="button" onclick="filterProcess()" class="" name="search" value="查找">
+            </div>
+            <div style="height:169px;margin-top:15px;">
+            <table class="table table-hover" style="font-size:1em; margin-top: 10px; margin-bottom: 0px;">
+                <thead>
+                    <tr>
+                        <th width="5%">No.</th>
+                        <th>USER</th>
+                        <th>PID</th>
+                        <th>%CPU</th>
+                        <th>%MEM</th>
+                        <th>VSZ</th>
+                        <th>RSS</th>
+                        <th>TTY</th>
+                        <th>STAT</th>
+                        <th>START</th>
+                        <th>TIME</th>
+                        <th width="12%">COMMAND</th>
+                        <th width="10%">OPERATE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if searchData %}
+                    {% for data in searchData[:4] %}
+                    <tr>
+                        <td style="padding:4px">{{ loop.index }}.</td>
+                        {% for item in data %}
+                        <td style="white-space: nowrap;padding:4px;overflow: hidden;text-overflow: ellipsis;">
+                        <span style='cursor:pointer;' data-html='true' data-toggle='popover' data-trigger='hover' data-containter='body' data-placement='left' data-content='{{ item }}' data-original-title="" title="">{{ item }}</span> 
+                    </td>
+                        {% endfor %}
+                        <td style="white-space: nowrap;padding:4px;overflow: hidden;text-overflow: ellipsis;">
+                            <button  class="btn btn-info" onclick="startProcess(this)" style="border-radius:0px;padding:1px 2px;" >启动</button>
+                            <button class="btn btn-warning" onclick="stopProcess(this)" style="border-radius:0px;padding:1px 2px;" >停止</button>
+                            <button class="btn btn-danger" onclick="killProcess(this)" style="border-radius:0px;padding:1px 2px;" >结束</button> 
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+                </tbody>
+             </table>
+             {% if not searchData %}
+             <div style=" width: 100%;display: inline-flex;justify-content: center;">
+                <span class="glyphicon glyphicon-info-sign" style="margin-top:80px;color:#f0ad4e" aria-hidden="true">No data!</span>
+             </div>
+             {% endif %}
+            </div>
+                <div class="pageNavBottom">
+                    <ul class="pagination">
+                            <li onclick="bottomPageBefore(this)"><a href="javascript:void(0);">&laquo;</a></li>
+                            <span class="curPage">1</span>/<span class="totalPage">1</span>
+                            <input type="number" id='goPageNumBottom' placeholder="pageNum" class="gopagenum" /><button id="goPageBottom" onclick="goBottomPages()">Go</button>
+                            <li onclick="bottomPageAfter(this)"><a href="javascript:void(0);">&raquo;</a></li>
+                        </ul>
+            </div>
+            <script>
+            (function() {
+                
+            })
+            function startProcess(item){
+                var pid = $(item).parents('tr').children().eq(2).text().trim()
+                //alert(pid.length)
+                data = { "type": "start", "pid": pid }
+                //postRequest('/')
+
             }
-            function sourceInfRet(ret){
-                console.log(ret)
-                var listHtml = '';
-                var tableHtml = '';
-                var listGroup = document.getElementById('list-group')
-                var tableGroup = document.getElementById('table-group')
-                for(var i = 0; i< ret['listData'].length; i++){
-                    listHtml +='<li class="list-group-item"><span>'+ ret['listData'][i] +'</span></li>';
-                }
-                for(var j = 1; j< ret['tableData'].length; j++){
-                    tableHtml +='<tr>';
-                    var retry = ret['tableData'][j]
-                    for(var k = 0; k < retry.length; k++){
-                        tableHtml += '<td>'+ retry[k] +'</td>'
-                    }
-                    tableHtml += '</tr>';
-                }
-                listGroup.innerHTML=listHtml;
-                tableGroup.innerHTML=tableHtml;
+
+            function stopProcess(item){
+                var pid = $(item).parents('tr').children().eq(2).text().tritextm()
             }
-        </script>
-        {% endif %}
-        {% endif %}
-        
-        {% if infoType == 'service' %}
+
+            function killProcess(item){
+                var pid = $(item).parents('tr').children().eq(2).text().trim()
+            }
+
+            function pageBefore(item){
+                var curPage = $(item).parents('.pageNav').find('.curPage').text()
+                var totalPage = $(item).parents('.pageNav').find('.totalPage').text()
+                if (parseInt(curPage) == 1) {
+                    alert('已经是第一页了！')
+                }else{
+
+                }       
+            }
+
+            function pageAfter(item){
+                var curPage = $(item).parents('.pageNav').find('.curPage').text()
+                var totalPage = $(item).parents('.pageNav').find('.totalPage').text()
+                if (parseInt(curPage) == parseInt(totalPage)) {
+                    alert('已经是最后一页了！')
+                }else{
+
+                }
+            }
+
+            function bottomPageBefore(item) {
+                var curPage = $(item).parents('.pageNavBottom').find('.curPage').text()
+                var totalPage = $(item).parents('.pageNavBottom').find('.totalPage').text()
+                if (parseInt(curPage) == 1) {
+                    alert('已经是第一页了！')
+                }else{
+
+                }
+            }
+
+            function bottomPageAfter(item) {
+                var curPage = $(item).parents('.pageNavBottom').find('.curPage').text()
+                var totalPage = $(item).parents('.pageNavBottom').find('.totalPage').text()
+                if (parseInt(curPage) == parseInt(totalPage)) {
+                    alert('已经是最后一页了！')
+                }else{
+
+                }
+            }
+
+            function goPages() {
+                var pageNum = $('#goPageNum').val()
+                alert(pageNum)
+                if (pageNum == '') {
+                    alert('page is null!')
+                }else{
+
+                }
+            }
+
+            function goBottomPages() {
+                var pageNum = $('#goPageNumBottom').val()
+                alert(pageNum)
+                if (pageNum == '') {
+                    alert('page is null!')
+                }else{
+
+                }
+            }
+
+            function filterProcess(){
+                var pName = $("input[name='sinput']").val()
+                if(pName == ''){
+                    alert("search is null")
+                }else{
+                    alert(pName)
+                }
+            }
+            </script>
+        {% elif infoType == 'service' %}
         <table class="table table-hover" style="table-layout:fixed; font-size:1.2em">
                 <thead>
                     <tr>

@@ -1,13 +1,17 @@
 {% extends "index.html" %}
-{% block info %}
+{% block nav %}
+<div class="top">
 <ul class="nav nav-tabs">
-    <li class="nav-item">
-      <a href="/serviceLog" class="nav-link">日志信息</a>
-    </li>
-    <li class="nav-item disabled">
-      <a href="#" class="nav-link">Disabled</a>
-    </li>
-</ul>
+        <li class="nav-item">
+          <a href="/serviceLog" class="nav-link">日志信息</a>
+        </li>
+        <li class="nav-item disabled">
+          <a href="#" class="nav-link">Disabled</a>
+        </li>
+    </ul>
+</div>
+{% endblock %}
+{% block info %}
 {% if dataTitle %}
 <label style="margin-top: 15px;">{{ dataTitle }}</label>
 {% endif %}

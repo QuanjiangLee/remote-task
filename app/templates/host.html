@@ -1,16 +1,24 @@
 {% extends "index.html" %}
+{% block nav %}
+<div class="top">
+    <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a href="/index" class="nav-link">系统信息</a>
+            </li>
+            <li class="nav-item">
+                <a href="/sourceInfo" class="nav-link">资源信息</a>
+            </li>
+            <li class="nav-item">
+                <a href="/otherInfo" class="nav-link">其他信息</a>
+            </li>
+            <li class="nav-item disabled">
+                <a href="#" class="nav-link">Disabled</a>
+            </li>
+    </ul>
+</div>
+{% endblock %}
 {% block info %}
-<ul class="nav nav-tabs">
-        <li class="nav-item">
-          <a href="/index" class="nav-link">系统信息</a>
-        </li>
-        <li class="nav-item">
-          <a href="/otherInfo" class="nav-link">其他信息</a>
-        </li>
-        <li class="nav-item disabled">
-          <a href="#" class="nav-link">Disabled</a>
-        </li>
-</ul>
+
 {% if dataTitle %}
 <label style="margin-top: 15px;">{{ dataTitle }}</label>
 {% endif %}
@@ -25,6 +33,63 @@
                 <li class="list-group-item item-error"><span style="color:black">{{ item.info }}:</span>&nbsp;&nbsp;{{ item.retopt }}</li>
             {% endif %}
         {% endfor %}
+        {% elif infoType == 'source' %}
+        {% if  listData %}
+        <ul class="list-group" id='list-group'>
+        {% for data in listData %}
+        <li class="list-group-item"><span>{{ data }}</span></li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+        {% if tableData %}
+        <table class="table table-hover" style="table-layout:fixed;margin-top:20px; font-size:1.2em">
+            <thead>
+                {% for data in tableData[0].split() %}
+                <th>{{ data }}</th>
+                {%  endfor %}
+            </thead>
+            <tbody id='table-group'>
+                {% for entry in tableData[1:] %}
+                <tr>
+                {% for data in entry.split() %}
+                <td>{{ data }}</td>
+                {% endfor %}
+                </tr>
+                {%  endfor %}
+            </tbody>      
+        </table>
+        <script type="text/javascript">
+            (function(){
+                clearTimeout(timer);
+                var timer = setInterval(function(){
+                    getSourceInf();
+                },1500);
+            })()
+            function getSourceInf(){
+                postRequest('/getSourceInfo','{}',true, sourceInfRet)
+            }
+            function sourceInfRet(ret){
+                console.log(ret)
+                var listHtml = '';
+                var tableHtml = '';
+                var listGroup = document.getElementById('list-group')
+                var tableGroup = document.getElementById('table-group')
+                for(var i = 0; i< ret['listData'].length; i++){
+                    listHtml +='<li class="list-group-item"><span>'+ ret['listData'][i] +'</span></li>';
+                }
+                for(var j = 1; j< ret['tableData'].length; j++){
+                    tableHtml +='<tr>';
+                    var retry = ret['tableData'][j]
+                    for(var k = 0; k < retry.length; k++){
+                        tableHtml += '<td>'+ retry[k] +'</td>'
+                    }
+                    tableHtml += '</tr>';
+                }
+                listGroup.innerHTML=listHtml;
+                tableGroup.innerHTML=tableHtml;
+            }
+        </script>
+        {% endif %}
         {% elif  infoType == 'otherInfo' %}
         {% for item in data %}
              <li class="list-group-item">{{ item }}</li>

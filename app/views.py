@@ -50,7 +50,7 @@ def login():
         userName = request.form.get('userName', '')
         passWord = request.form.get('passWord', '')
         rem_me = request.form.get('rem_me', False)
-        print(userName, passWord, '--------')
+        print(userName, passWord, rem_me)
         user = UserInf.query.filter_by(userName = userName).first()
         if  not user  or user.userPassword != passWord:
             flash("用户名或密码错误!")
@@ -147,7 +147,7 @@ def source_Info():
         listData.append(list)
     for data in linesList[6:]:
         tableData.append(data)
-    return render_template('manageServ.html', title=title, dataTitle=dataTitle, listData=listData, tableData=tableData, infoType='source')
+    return render_template('host.html', title=title, dataTitle=dataTitle, listData=listData, tableData=tableData, infoType='source')
 
 @app.route('/getSourceInfo', methods=['GET', 'POST'])
 def getSourceInfo():
@@ -269,7 +269,7 @@ def serviceLog():
 def db_insert_logs(logType, logMsg, retStatus=False, logStatus=False):
     #cur_user = UserInf.query.filter_by(userName = cur_user.userName).first()
     try:
-        log = models.LogsInf(logTime=datetime.datetime.utcnow(), logType=logType, logMsg=logMsg,retStatus=retStatus, logStatus=logStatus, user=current_user)
+        log = LogsInf(logTime=datetime.datetime.utcnow(), logType=logType, logMsg=logMsg,retStatus=retStatus, logStatus=logStatus, user=current_user)
         db.session.add(log)
         db.session.commit()
     except Exception as err:
@@ -300,14 +300,95 @@ def db_delete_logs():
     flash('delete log success!')
     return redirect(request.args.get('next') or url_for('serviceLog'))
 
-def more_exec(option, *args):
-    more_ret=[]
-    for arg in args:
-        ret = cmd_exec(arg, option)
-        more_ret.append(ret)
-    return more_ret
+@app.route('/getProcessInfo', methods=['GET', 'POST'])
+@app.route('/getProcessInfo/<int:page>', methods=['GET', 'POST'])
+def getProcessInfo(page = 1):
+    #if request.method == "GET":
+    #    page = request.args.get('page', '')
+    dataTitle = '进程管理:'
+    start = (page-1) * 15 +1
+    end = start + 15
+    lineCount = -1 
+    lines = []
+    tableData = []
+    with open('test.ps', 'r') as f:
+        for line in f:
+            lineCount += 1
+            if lineCount < start:
+                continue
+            lines.append(line)
+            if len(lines) >= 15:
+                break  
+    for line in lines:
+        list = line.split()
+        if len(list) > 11:
+            print len(list)
+            for i in range(11, len(list)):
+                list[10] += ' '+list[i]
+            print list[10]
+        tableData.append(list[:11])
+    return render_template('manageServ.html', dataTitle=dataTitle, tableData = tableData, infoType='processManage')
 
-def cmd_exec(cmd, option):
+
+
+# R, S -> T: 
+# kill -STOP PID
+# T -> S, R:
+# kill -CONT PID
+
+# get process source info to file
+def process_info():
+    cmd = 'ps -aux > test.ps'
+    try:
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    except Exception as err:
+        print('error is ' + err)
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+    (stdout, stderr) = p.communicate()
+    if stderr:
+        return False
+    return True
+
+
+# R,S -> T
+def process_stop(pid):
+    cmd = 'kill -STOP %s' % pid
+    try:
+        ret = cmd_exec(cmd)
+    except Exception :
+        ret = cmd_exec(cmd, True)
+    return ret
+
+# T -> S,R
+def process_start(pid):
+    cmd = 'kill -CONT %s' % pid 
+    try:
+        ret = cmd_exec(cmd)
+    except Exception :
+        ret = cmd_exec(cmd, True)
+    return ret
+
+# search process via pNmae
+def process_search(pName):
+    cmd = 'ps -aux | grep %s | grep -v grep' % pName
+    try:
+        ret = cmd_exec(cmd)
+    except Exception :
+        ret = cmd_exec(cmd, True)
+    return ret
+
+
+def cmd_run(args, option=False) :
+    is_exec = True
+    print args
+    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=option)
+    (stdout, stderr) = p.communicate()
+    if stderr:
+        is_exec = False
+        return is_exec, stderr
+    return is_exec, stdout
+
+def cmd_exec(cmd, option=False):
     is_exec, cmdout = cmd_run(cmd, option)
     if is_exec is True:
         ret = {
@@ -323,15 +404,11 @@ def cmd_exec(cmd, option):
         }
         return ret
 
+def more_exec(option=False, *args):
+    more_ret=[]
+    for arg in args:
+        ret = cmd_exec(arg, option)
+        more_ret.append(ret)
+    return more_ret
 
-def cmd_run(args, option=False) :
-    is_exec = True
-    print args
-    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=option)
-    (stdout, stderr) = p.communicate()
-    if stderr:
-        is_exec = False
-        return is_exec, stderr
-    return is_exec, stdout
-from app import db,models
 
