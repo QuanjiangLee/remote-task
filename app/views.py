@@ -3,6 +3,7 @@ import sys
 import os
 import time 
 import json
+import math
 import datetime 
 import subprocess
 reload(sys)  
@@ -31,8 +32,7 @@ def top_run():
 @app.before_request
 def before_request():
     g.user = current_user  
-    print(g.user)
-    top_run()
+    #print(g.user)
 
 @LoginMa.user_loader
 def load_User(userId):
@@ -50,7 +50,7 @@ def login():
         userName = request.form.get('userName', '')
         passWord = request.form.get('passWord', '')
         rem_me = request.form.get('rem_me', False)
-        print(userName, passWord, rem_me)
+        #print(userName, passWord, rem_me)
         user = UserInf.query.filter_by(userName = userName).first()
         if  not user  or user.userPassword != passWord:
             flash("用户名或密码错误!")
@@ -59,8 +59,6 @@ def login():
             login_user(user, remember=rem_me)
             flash("登录成功!")
             return redirect(request.args.get('next') or url_for('index'))
-        #flash('login requested for id="%s", rmember_me = %s' % (form.id_me.data, str(form.rem_me.data)))
-        #return redirect('/index')
     else:
         flash("用户名或密码不能为空!")
     return render_template('login.html', title='登录', form=form)
@@ -98,7 +96,7 @@ def index():
 def getMsgCount():
         cur_user = UserInf.query.filter_by(userName = current_user.userName).first()
         logsCount = LogsInf.query.filter_by(user_id=cur_user.userId, logStatus=False).count()
-        print logsCount
+        #print logsCount
         ret = {'msgCount': logsCount}
         return jsonify(ret) 
 
@@ -136,6 +134,7 @@ def service_info():
 
 @app.route('/sourceInfo')
 def source_Info():
+    top_run()
     title = "资源信息"
     dataTitle = "资源信息:"  
     listData = []
@@ -151,6 +150,7 @@ def source_Info():
 
 @app.route('/getSourceInfo', methods=['GET', 'POST'])
 def getSourceInfo():
+    top_run()
     listData = []
     tableData = []
     with open('test.top', 'r') as f:
@@ -170,7 +170,7 @@ def manageService():
         serviceName = request.form.get('serviceName', '')
         customCmd = request.form.get('customCmd', '')
         manageType = request.form.get('manageType', '')
-        print('=========',serviceName, manageType,customCmd)
+        #print(serviceName, manageType,customCmd)
         if serviceName == '' and customCmd == '' and manageType == '':
             flash("The form is not should all null ")
             return redirect(request.args.get('next') or url_for('service_info'))
@@ -253,12 +253,11 @@ def serviceLog():
         logs = LogsInf.query.filter_by(user_id=cur_user.userId).order_by(desc(LogsInf.logTime))
         for log in logs:
             logsRead.append(log.logStatus)
-        print logsRead
         tmpLogs = LogsInf.query.filter_by(user_id=cur_user.userId)
         tmpLogs.update(dict(logStatus=True))
         db.session.commit()
     except Exception as err:
-        print err
+        print str(err)
         flash('it\'s no logs in here ')
         return render_template('logsInf.html', title=title, dataTitle=dataTitle, logs=logs, logsRead=logsRead, infoType='logsInf')
     #logsLen = len(logs)
@@ -285,13 +284,12 @@ def db_delete_logs():
         data = request.get_json(force=False)
         item = data['item']
     try:
-        print item
         cur_user = UserInf.query.filter_by(userName = current_user.userName).first()
         del_log = LogsInf.query.filter_by(id=int(item), user_id=cur_user.userId).first()
         db.session.delete(del_log)
         db.session.commit()
     except Exception as err:
-        print err
+        print str(err)
         flash('delete log error!')
         #ret = {'ret': False}
         return redirect(request.args.get('next') or url_for('serviceLog'))
@@ -300,11 +298,11 @@ def db_delete_logs():
     flash('delete log success!')
     return redirect(request.args.get('next') or url_for('serviceLog'))
 
-@app.route('/getProcessInfo', methods=['GET', 'POST'])
 @app.route('/getProcessInfo/<int:page>', methods=['GET', 'POST'])
 def getProcessInfo(page = 1):
     #if request.method == "GET":
     #    page = request.args.get('page', '')
+    process_info()
     dataTitle = '进程管理:'
     start = (page-1) * 15 +1
     end = start + 15
@@ -316,20 +314,111 @@ def getProcessInfo(page = 1):
             lineCount += 1
             if lineCount < start:
                 continue
+            line = str(lineCount)+' '+line
             lines.append(line)
             if len(lines) >= 15:
                 break  
     for line in lines:
         list = line.split()
-        if len(list) > 11:
-            print len(list)
-            for i in range(11, len(list)):
-                list[10] += ' '+list[i]
-            print list[10]
-        tableData.append(list[:11])
-    return render_template('manageServ.html', dataTitle=dataTitle, tableData = tableData, infoType='processManage')
+        if len(list) > 12:
+            #print len(list)
+            for i in range(12, len(list)):
+                list[11] += ' '+list[i]
+            #print list[11]
+        tableData.append(list[:12])
+    curPage = page
+    totalPage = processTotalCount()
+    if request.method == 'POST':
+        ret = {'tableData': tableData, 'curPage': page, "totalPage": totalPage }
+        return jsonify(ret)
+    return render_template('manageServ.html', dataTitle=dataTitle, tableData = tableData, curPage=page, totalPage=totalPage, infoType='processManage')
 
 
+@app.route('/filterProcessInfo/<string:pName>/<int:page>', methods=['GET', 'POST'])
+def filterProcessInfo(pName, page):
+    try:
+        ret = process_search(pName)
+    except:
+        ret = {'tableData': False}
+        return jsonify(ret) 
+    else:
+        if ret is True:
+            start = (page-1) * 4 +1
+            end = start + 4
+            lineCount = 0 
+            lines = []
+            tableData = []
+            with open('test.ps2', 'r') as f:
+                for line in f:
+                    lineCount += 1
+                    if lineCount < start:
+                        continue
+                    line = str(lineCount)+' '+line
+                    lines.append(line)
+                    if len(lines) >= 4:
+                        break  
+            for line in lines:
+                list = line.split()
+                if len(list) > 12:
+                    #print len(list)
+                    for i in range(12, len(list)):
+                        list[11] += ' '+list[i]
+                    #print list[11]
+                tableData.append(list[:12])
+            #print tableData
+            curPage = page
+            totalPage = processTotalCount(2)
+            ret = {'tableData': tableData, 'curPage': page, "totalPage": totalPage }
+            return jsonify(ret)
+        else:
+            ret = {'tableData': None}
+            return jsonify(ret)
+
+@app.route('/manageProcess', methods=['POST'])
+def manageProcess():
+    if request.method == 'POST':
+        data = request.get_json(force=False)
+        type = data['type']
+        pid = data['pid']
+    else:
+        ret = {'ret': False, 'type': type}
+        return jsonify(ret)
+    if type == 'start':
+        cmdret = process_start(pid)
+    elif type == 'stop':
+        cmdret = process_stop(pid)
+    elif type == 'kill':
+        cmdret =  process_kill(pid)
+    else:
+        ret = {'ret': False, 'type': type}
+        return jsonify(ret)
+    if cmdret['is_exec'] is True:
+        ret = {'ret': True, 'type': type}
+        return jsonify(ret)
+    else:
+        ret = {'ret': False, 'type': type}
+        return jsonify(ret) 
+
+
+def processTotalCount(type=1):
+    if type == 1:
+        cmd = 'wc -l test.ps'
+    else:
+        cmd = 'wc -l test.ps2'
+    try:
+        ret = cmd_exec(cmd)
+    except Exception :
+        ret = cmd_exec(cmd, True)
+    if ret['is_exec'] is True:
+        totalCount = ret['cmdret'].split()[0]
+        if type == 1:
+            totalPage = math.ceil((int(totalCount)-1) / 15.0)
+        else:
+            totalPage = math.ceil((int(totalCount)) / 4.0)
+        #print totalPage
+    else:
+        totalPage = 1
+    return totalPage
 
 # R, S -> T: 
 # kill -STOP PID
@@ -340,9 +429,9 @@ def getProcessInfo(page = 1):
 def process_info():
     cmd = 'ps -aux > test.ps'
     try:
-        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     except Exception as err:
-        print('error is ' + err)
+        print('error is ' + str(err))
         p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
     (stdout, stderr) = p.communicate()
     if stderr:
@@ -368,19 +457,32 @@ def process_start(pid):
         ret = cmd_exec(cmd, True)
     return ret
 
-# search process via pNmae
-def process_search(pName):
-    cmd = 'ps -aux | grep %s | grep -v grep' % pName
+# kill a process
+def process_kill(pid):
+    cmd = 'kill -9 %s' % pid 
     try:
         ret = cmd_exec(cmd)
     except Exception :
         ret = cmd_exec(cmd, True)
     return ret
 
+# search process via pNmae
+def process_search(pName):
+    cmd = 'ps -aux | grep %s | grep -v grep > test.ps2' % pName 
+    try:
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    except Exception as err:
+        print('error is ' + str(err))
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+    (stdout, stderr) = p.communicate()
+    if stderr:
+        return False
+    return True
+
 
 def cmd_run(args, option=False) :
     is_exec = True
-    print args
+    #print args
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=option)
     (stdout, stderr) = p.communicate()
     if stderr:

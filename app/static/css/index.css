@@ -250,6 +250,7 @@
     .pagination>li {
         padding-left: 0px;
         padding-right: 0px;
+        font-size: 18px;
     }
     
     .gopagenum {

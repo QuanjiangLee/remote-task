@@ -3,7 +3,7 @@
 <div class="top">
 <ul class="nav nav-tabs">
         <li class="nav-item">
-          <a href="/getProcessInfo" class="nav-link">进程管理</a>
+          <a href="/getProcessInfo/1" class="nav-link">进程管理</a>
         </li>
         <li class="nav-item">
           <a href="/serviceManage" class="nav-link">服务管理</a>
@@ -39,15 +39,14 @@
                         <th width="10%">OPERATE</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="infoTable">
                     {% if tableData %}
                     {% for data in tableData %}
                     <tr>
-                        <td style="padding:4px">{{ loop.index }}.</td>
                         {% for item in data %}
                         <td style="white-space: nowrap;padding:4px;overflow: hidden;text-overflow: ellipsis;">
                         <span style='cursor:pointer;' data-html='true' data-toggle='popover' data-trigger='hover' data-containter='body' data-placement='left' data-content='{{ item }}' data-original-title="" title="">{{ item }}</span> 
-                    </td>
+                       </td>
                         {% endfor %}
                         <td style="white-space: nowrap;padding:4px;overflow: hidden;text-overflow: ellipsis;"> 
                             <button  class="btn btn-info" onclick="startProcess(this)" style="border-radius:0px;padding:1px 2px;" >启动</button>
@@ -60,7 +59,7 @@
                 </tbody>
             </table>
             {% if not tableData %}
-            <div style="width: 100%;display: inline-flex;justify-content: center;">
+            <div class='TnoData' style="width: 100%;display: inline-flex;justify-content: center;">
                 <span class="glyphicon glyphicon-info-sign" style="margin-top:280px;color:#f0ad4e; font-size:1.2em; " aria-hidden="true">No data!</span>
             </div>
             {% endif %}
@@ -68,11 +67,11 @@
             <div class="pageNav">
                     <ul class="pagination">
                             <li onclick="pageBefore(this)"><a href="javascript:void(0);">&laquo;</a></li>
-                            <span class="curPage">1</span>/<span class="totalPage">1</span>
-                            <input type="number" id='goPageNum' placeholder="pageNum" class="gopagenum" /><button id="goPage" onclick="goPages()">Go</button>
+                            <li><span class="curPage" style="padding: 1px 12px;">1</span><span style="padding: 1px 12px;">/</span><span class="totalPage" style="padding: 1px 12px;">{{ totalPage | int }}</span></li>
+                            <input type="number" id='goPageNum' placeholder="pageNum" class="gopagenum" />
+                            <button id="goPage" onclick="goPages()">Go</button>
                              刷新:
-                            <button class="btn btn-info btn-sm refresh "><span class="glyphicon glyphicon-refresh glyphicon-refresh-animate {
-                                " aria-hidden="true"></span></button>
+                            <button class="btn btn-info btn-sm refresh" onclick="freshProcessInfo(this)"><span class="glyphicon glyphicon-refresh " aria-hidden="true"></span></button>
                             <li onclick="pageAfter(this)"><a href="javascript:void(0);">&raquo;</a></li>
                         </ul>
             </div>
@@ -99,7 +98,7 @@
                         <th width="10%">OPERATE</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="searchTable">
                     {% if searchData %}
                     {% for data in searchData[:4] %}
                     <tr>
@@ -120,7 +119,7 @@
                 </tbody>
              </table>
              {% if not searchData %}
-             <div style=" width: 100%;display: inline-flex;justify-content: center;">
+             <div class="noData" style=" width: 100%;display: inline-flex;justify-content: center;">
                 <span class="glyphicon glyphicon-info-sign" style="margin-top:80px;color:#f0ad4e" aria-hidden="true">No data!</span>
              </div>
              {% endif %}
@@ -128,8 +127,9 @@
                 <div class="pageNavBottom">
                     <ul class="pagination">
                             <li onclick="bottomPageBefore(this)"><a href="javascript:void(0);">&laquo;</a></li>
-                            <span class="curPage">1</span>/<span class="totalPage">1</span>
-                            <input type="number" id='goPageNumBottom' placeholder="pageNum" class="gopagenum" /><button id="goPageBottom" onclick="goBottomPages()">Go</button>
+                            <li><span class="curPage" style="padding: 1px 12px;">1</span><span style="padding: 1px 12px;">/</span><span class="totalPage" style="padding: 1px 12px;">1</span></li>
+                            <input type="number" id='goPageNumBottom' placeholder="pageNum" class="gopagenum" />
+                            <button id="goPageBottom" onclick="goBottomPages()">Go</button>
                             <li onclick="bottomPageAfter(this)"><a href="javascript:void(0);">&raquo;</a></li>
                         </ul>
             </div>
@@ -141,17 +141,32 @@
                 var pid = $(item).parents('tr').children().eq(2).text().trim()
                 //alert(pid.length)
                 data = { "type": "start", "pid": pid }
-                //postRequest('/')
-
+                postRequest('/manageProcess', data ,true, manageProcessRet)
             }
 
             function stopProcess(item){
-                var pid = $(item).parents('tr').children().eq(2).text().tritextm()
+                var pid = $(item).parents('tr').children().eq(2).text().trim()
+                data = { "type": "stop", "pid": pid }
+                postRequest('/manageProcess', data ,true, manageProcessRet)
             }
 
             function killProcess(item){
                 var pid = $(item).parents('tr').children().eq(2).text().trim()
+                data = { "type": "kill", "pid": pid }
+                postRequest('/manageProcess', data ,true, manageProcessRet)
+
             }
+
+            function manageProcessRet(ret) {
+                if (ret['ret'] == true){
+                    alert(ret['type'] + ' is success!' )
+                    freshProcessInfo($('.refresh'))
+                    filterProcess()
+                }else{
+                    alert(ret['type'] + ' is failed!' )
+                }
+            }
+
 
             function pageBefore(item){
                 var curPage = $(item).parents('.pageNav').find('.curPage').text()
@@ -159,7 +174,8 @@
                 if (parseInt(curPage) == 1) {
                     alert('已经是第一页了！')
                 }else{
-
+                    page = parseInt(curPage) -1
+                    postRequest('/getProcessInfo/'+page,'{}',true, processInfRet)
                 }       
             }
 
@@ -169,56 +185,166 @@
                 if (parseInt(curPage) == parseInt(totalPage)) {
                     alert('已经是最后一页了！')
                 }else{
-
+                    page = parseInt(curPage) +1
+                    postRequest('/getProcessInfo/'+page,'{}',true, processInfRet)
                 }
             }
 
-            function bottomPageBefore(item) {
-                var curPage = $(item).parents('.pageNavBottom').find('.curPage').text()
-                var totalPage = $(item).parents('.pageNavBottom').find('.totalPage').text()
-                if (parseInt(curPage) == 1) {
-                    alert('已经是第一页了！')
-                }else{
-
-                }
-            }
-
-            function bottomPageAfter(item) {
-                var curPage = $(item).parents('.pageNavBottom').find('.curPage').text()
-                var totalPage = $(item).parents('.pageNavBottom').find('.totalPage').text()
-                if (parseInt(curPage) == parseInt(totalPage)) {
-                    alert('已经是最后一页了！')
-                }else{
-
-                }
+            function freshProcessInfo(item){
+                var curPage = $(item).parents('.pageNav').find('.curPage').text()
+                $(item).children('span').addClass('glyphicon-refresh-animate')
+                postRequest('/getProcessInfo/'+curPage,'{}',true, processInfRet)
             }
 
             function goPages() {
                 var pageNum = $('#goPageNum').val()
-                alert(pageNum)
-                if (pageNum == '') {
-                    alert('page is null!')
+                var totalPage = $('#goPageNum').parent().find('.totalPage').text()
+                if (pageNum == '' || pageNum <=0) {
+                    alert('page number is error!')
+                }else if(pageNum > parseInt(totalPage)){
+                    alert('no this page ')
                 }else{
-
+                    postRequest('/getProcessInfo/'+pageNum,'{}',true, processInfRet)
                 }
             }
 
-            function goBottomPages() {
-                var pageNum = $('#goPageNumBottom').val()
-                alert(pageNum)
-                if (pageNum == '') {
-                    alert('page is null!')
-                }else{
 
+            function bottomPageBefore(item) {
+                var pName = $("input[name='sinput']").val()
+                var curPage = $(item).parents('.pageNavBottom').find('.curPage').text()
+                if (parseInt(curPage) <= 1) {
+                    alert('已经是第一页了！')
+                    }else{
+                        if(pName == ''){
+                            $('.searchTable').html('')
+                            $('.noData').hide()
+                            setTimeout(function(){
+                                $('.noData').show()
+                            }, 500)
+                            $('.curPage:eq(1)').text(1)
+                            $('.totalPage:eq(1)').text(1)
+                        }else{
+                            pageNum = parseInt(curPage) - 1
+                            postRequest('/filterProcessInfo/'+pName+'/'+pageNum,'{}',true, bottomProcessInfRet)
+                        }
+                    }
+                }
+
+            function bottomPageAfter(item) {
+                var pName = $("input[name='sinput']").val()
+                var curPage = $(item).parents('.pageNavBottom').find('.curPage').text()
+                var totalPage = $(item).parents('.pageNavBottom').find('.totalPage').text()
+                if (parseInt(curPage) == parseInt(totalPage)) {
+                    alert('已经是最后一页了！')
+                    }else{
+                        if(pName == ''){
+                            $('.searchTable').html('')
+                            $('.noData').hide()
+                            setTimeout(function(){
+                                $('.noData').show()
+                            }, 500)
+                            $('.curPage:eq(1)').text(1)
+                            $('.totalPage:eq(1)').text(1)
+                        }else{
+                            pageNum = parseInt(curPage) + 1
+                            postRequest('/filterProcessInfo/'+pName+'/'+pageNum,'{}',true, bottomProcessInfRet)
+                        }
+                    }
+                }
+
+            function goBottomPages() {
+                var pName = $("input[name='sinput']").val()
+                var pageNum = $('#goPageNumBottom').val()
+                var totalPage = $('#goPageNumBottom').parent().find('.totalPage').text()
+                if(pName == ''){
+                    $('.searchTable').html('')
+                    $('.noData').hide()
+                    setTimeout(function(){
+                        $('.noData').show()
+                    }, 500)
+                    $('.curPage:eq(1)').text(1)
+                    $('.totalPage:eq(1)').text(1)
+                }
+                if (pageNum == '' || pageNum <=0) {
+                    alert('page number is error!')
+                }else if(pageNum > parseInt(totalPage)){
+                    alert('no this page ')
+                }else{
+                    postRequest('/filterProcessInfo/'+pName+'/'+pageNum,'{}',true, bottomProcessInfRet)
                 }
             }
 
             function filterProcess(){
                 var pName = $("input[name='sinput']").val()
+                var page = $('.curPage:eq(1)').parents('.pageNavBottom').find('.curPage').text()
                 if(pName == ''){
-                    alert("search is null")
+                    $('.searchTable').html('')
+                    $('.noData').hide()
+                    setTimeout(function(){
+                        $('.noData').show()
+                    }, 500)
                 }else{
-                    alert(pName)
+                    postRequest('/filterProcessInfo/'+pName+'/'+page,'{}',true, bottomProcessInfRet)
+                }
+            }
+            function processInfRet(ret){
+                var html = '';
+                if (ret['tableData']){
+                    for (var i=0; i<ret['tableData'].length; i++ ){
+                        if (ret['tableData'][i] == ''){
+                            break;
+                        }
+                        html += '<tr>'
+                        for (var j=0; j<ret['tableData'][i].length; j++){                 
+                            html += '<td style="white-space: nowrap;padding:4px;overflow: hidden;text-overflow: ellipsis;">'
+                            html += "<span style='cursor:pointer;width:2.5em;display:inline-block' data-html='true' data-toggle='popover' data-trigger='hover' data-containter='body' data-placement='left'  data-content='"+ret['tableData'][i][j]+"'>"+ret['tableData'][i][j]+"</span></td>"
+                        }
+                        html += '<td style="white-space: nowrap;padding:4px;overflow: hidden;text-overflow: ellipsis;">'
+                        html += '<button  class="btn btn-info" onclick="startProcess(this)" style="border-radius:0px;padding:1px 2px;" >启动</button>'
+                        html += '<button class="btn btn-warning" onclick="stopProcess(this)" style="border-radius:0px;padding:1px 2px;" >停止</button>'
+                        html += '<button class="btn btn-danger" onclick="killProcess(this)" style="border-radius:0px;padding:1px 2px;" >结束</button></td></tr>'
+                    }
+                    $('.infoTable').html(html)
+                    $('.TnoData').hide()
+                    $('.curPage').first().text(ret['curPage'])
+                    $('.totalPage').first().text(ret['totalPage'])
+                    $("span[data-trigger='hover']").popover();
+                    $('.glyphicon-refresh-animate').removeClass('glyphicon-refresh-animate')
+                }else{
+                    alert('no such process or dispatch an error!')
+                    $('.infoTable').html('')
+                    $('.TnoData').show()
+                    $('.glyphicon-refresh-animate').removeClass('glyphicon-refresh-animate')
+                }
+            }
+            function bottomProcessInfRet(ret) {
+                var html = '';
+                if (ret['tableData']){
+                    for (var i=0; i<ret['tableData'].length; i++ ){
+                        if (ret['tableData'][i] == ''){
+                            break;
+                        }
+                            html += '<tr>'
+                            for (var j=0; j<ret['tableData'][i].length; j++){
+                                html += '<td style="white-space: nowrap;padding:4px;overflow: hidden;text-overflow: ellipsis;">'
+                                html += "<span style='cursor:pointer;width:2.5em;display:inline-block' data-html='true' data-toggle='popover' data-trigger='hover' data-containter='body' data-placement='left' data-content='"+ret['tableData'][i][j]+"' >"+ret['tableData'][i][j]+"</span></td>"
+                            }
+                            html += '<td style="white-space: nowrap;padding:4px;overflow: hidden;text-overflow: ellipsis;">'
+                            html += '<button  class="btn btn-info" onclick="startProcess(this)" style="border-radius:0px;padding:1px 2px;" >启动</button>'
+                            html += '<button class="btn btn-warning" onclick="stopProcess(this)" style="border-radius:0px;padding:1px 2px;" >停止</button>'
+                            html += '<button class="btn btn-danger" onclick="killProcess(this)" style="border-radius:0px;padding:1px 2px;" >结束</button></td></tr>'
+                    }
+                    $('.searchTable').html(html)
+                    $('.noData').hide()
+                    $('.curPage:eq(1)').text(ret['curPage'])
+                    $('.totalPage:eq(1)').text(ret['totalPage'])
+                    $("span[data-trigger='hover']").popover();
+                }else{
+                    $('.searchTable').html(html)
+                    $('.noData').hide()
+                    setTimeout(function(){
+                        $('.noData').show()
+                    }, 500)
                 }
             }
             </script>
