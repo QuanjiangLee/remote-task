@@ -283,6 +283,8 @@
                     setTimeout(function(){
                         $('.noData').show()
                     }, 500)
+                    $('.curPage:eq(1)').text(1)
+                    $('.totalPage:eq(1)').text(1)
                 }else{
                     postRequest('/filterProcessInfo/'+pName+'/'+page,'{}',true, bottomProcessInfRet)
                 }
@@ -318,8 +320,9 @@
                 }
             }
             function bottomProcessInfRet(ret) {
+                console.log(ret)
                 var html = '';
-                if (ret['tableData']){
+                if (ret['totalPage'] != 0){
                     for (var i=0; i<ret['tableData'].length; i++ ){
                         if (ret['tableData'][i] == ''){
                             break;
